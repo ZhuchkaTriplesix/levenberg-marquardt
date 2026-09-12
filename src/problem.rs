@@ -29,6 +29,32 @@ where
     /// Compute the residual vector.
     fn residuals(&self) -> Option<Vector<F, M, Self::ResidualStorage>>;
 
+    /// Compute the residual vector into an existing buffer.
+    ///
+    /// The default implementation calls [`residuals`](#tymethod.residuals) and copies the result.
+    /// Override this method to avoid heap allocations in dynamic problems.
+    fn residuals_into(&self, out: &mut Vector<F, M, Self::ResidualStorage>) -> bool {
+        if let Some(res) = self.residuals() {
+            *out = res;
+            true
+        } else {
+            false
+        }
+    }
+
     /// Compute the Jacobian of the residual vector.
     fn jacobian(&self) -> Option<Matrix<F, M, N, Self::JacobianStorage>>;
+
+    /// Compute the Jacobian of the residual vector into an existing buffer.
+    ///
+    /// The default implementation calls [`jacobian`](#tymethod.jacobian) and copies the result.
+    /// Override this method to avoid heap allocations in dynamic problems.
+    fn jacobian_into(&self, out: &mut Matrix<F, M, N, Self::JacobianStorage>) -> bool {
+        if let Some(jac) = self.jacobian() {
+            *out = jac;
+            true
+        } else {
+            false
+        }
+    }
 }

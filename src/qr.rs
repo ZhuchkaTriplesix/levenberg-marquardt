@@ -7,7 +7,6 @@
 
 #[cfg(test)]
 use approx::assert_relative_eq;
-use core::iter::repeat;
 use nalgebra::{
     DefaultAllocator, Dim, DimMax, DimMaximum, DimMin, Matrix, OMatrix, OVector, Vector,
     allocator::{Allocator, Reallocator},
@@ -140,16 +139,9 @@ where
         // compute first n-entries of Q^T * b
         let (m, n) = self.qr.data.shape();
         let u1 = Dim::from_usize(1);
-        let mut qt_b = OVector::<F, N>::from_iterator_generic(
-            n,
-            u1,
-            b.as_slice()
-                .iter()
-                .copied()
-                .chain(repeat(F::zero()))
-                .take(n.value()),
-        );
-        for j in 0..m.min(n).value() {
+        let mut qt_b = OVector::<F, N>::zeros_generic(n, u1);
+        let min_mn = m.min(n).value();
+        for j in 0..min_mn {
             let axis = self.qr.view_range(j.., j);
             if !axis[0].is_zero() {
                 let temp = -dot(&b.rows_range(j..), &axis) / axis[0];
@@ -369,9 +361,11 @@ where
         self.solve_after_elimination(rhs)
     }
 
-    /// Solve the least squares problem with a zero diagonal.
-    pub fn solve_with_zero_diagonal(&mut self) -> (OVector<F, N>, CholeskyFactor<'_, F, M, N>) {
-        let u1 = Dim::from_usize(1);
+    /// Solve the least squares problem with a zero diagonal into an existing vector buffer.
+    pub fn solve_with_zero_diagonal_into(
+        &mut self,
+        mut x: OVector<F, N>,
+    ) -> (OVector<F, N>, CholeskyFactor<'_, F, M, N>) {
         let (_m, n) = self.upper_r.data.shape();
         let l = self.upper_r.rows_generic(0, n);
         self.work.copy_from(&self.qt_b);
@@ -379,7 +373,6 @@ where
         self.work.rows_range_mut(rank..).fill(F::zero());
         l.view_range(..rank, ..rank)
             .solve_upper_triangular_mut(&mut self.work.rows_range_mut(..rank));
-        let mut x = OVector::<F, N>::zeros_generic(n, u1);
         for j in 0..n.value() {
             x[self.permutation[j]] = self.work[j];
         }
@@ -392,6 +385,14 @@ where
             l_diag: &self.l_diag,
         };
         (x, chol)
+    }
+
+    /// Solve the least squares problem with a zero diagonal.
+    pub fn solve_with_zero_diagonal(&mut self) -> (OVector<F, N>, CholeskyFactor<'_, F, M, N>) {
+        let u1 = Dim::from_usize(1);
+        let (_m, n) = self.upper_r.data.shape();
+        let x = OVector::<F, N>::zeros_generic(n, u1);
+        self.solve_with_zero_diagonal_into(x)
     }
 
     /// Compute if the matrix A has rank `$n$`.
