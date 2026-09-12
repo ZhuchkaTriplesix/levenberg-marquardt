@@ -9,7 +9,7 @@ use nalgebra::{
 };
 use num_traits::Float;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "minpack-compat"))]
 #[allow(
     clippy::float_cmp,
     clippy::excessive_precision,
