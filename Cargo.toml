@@ -36,6 +36,11 @@ rand_chacha = "0.9.0"
 nalgebra = "0.35"
 sample-consensus = "1.0.2"
 approx = "0.5.1"
+criterion = { version = "0.5", default-features = false }
+
+[[bench]]
+name = "optimization"
+harness = false
 
 [profile.test]
 # The line fitting test case needs this to run in reasonable amount of time
