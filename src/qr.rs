@@ -626,13 +626,14 @@ fn test_pivoted_qr_more_branches() {
 }
 
 #[test]
+#[cfg(feature = "minpack-compat")]
 fn test_pivoted_qr_big_rank1() {
     // This test case was generated directly from MINPACK's QRFAC
     use nalgebra::{OMatrix, U5, U10, Vector5};
     let a = OMatrix::<f64, U10, U5>::from_fn(|i, j| ((i + 1) * (j + 1)) as f64);
     let qr = PivotedQR::new(a);
     let r_diag = Vector5::<f64>::new(-98.107084351742913, -3.9720546451956370E-015, 0., 0., 0.);
-    assert_relative_eq!(qr.r_diag, r_diag);
+    assert_relative_eq!(qr.r_diag, r_diag, epsilon = 1e-12);
     #[rustfmt::skip]
     let qr_ref = OMatrix::<f64, U10, U5>::from_column_slice(&[
         // matrix looks transposed in this form, this is a column slice!

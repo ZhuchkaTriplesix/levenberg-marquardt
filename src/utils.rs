@@ -337,14 +337,21 @@ where
     AS: Storage<F, N, U1>,
     BS: Storage<F, N, U1>,
 {
-    // To achieve floating point equality with MINPACK
-    // the dot product implementation from nalgebra must not
-    // be used.
-    let mut dot = F::zero();
-    for (x, y) in a.iter().zip(b.iter()) {
-        dot += *x * *y;
+    #[cfg(feature = "minpack-compat")]
+    {
+        // To achieve floating point equality with MINPACK
+        // the dot product implementation from nalgebra must not
+        // be used.
+        let mut dot = F::zero();
+        for (x, y) in a.iter().zip(b.iter()) {
+            dot += *x * *y;
+        }
+        dot
     }
-    dot
+    #[cfg(not(feature = "minpack-compat"))]
+    {
+        a.dot(b)
+    }
 }
 
 #[allow(dead_code)]
@@ -384,6 +391,7 @@ pub(crate) fn float_repr<F: Float>(f: F) -> alloc::string::String {
 }
 
 #[test]
+#[cfg(feature = "minpack-compat")]
 fn test_linear_case() {
     use crate::lm::test_examples::LinearFullRank;
     use approx::assert_relative_eq;
