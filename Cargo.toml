@@ -25,7 +25,7 @@ default = []
 minpack-compat = []
 
 [dependencies]
-nalgebra = { version = "0.35", default-features = false }
+nalgebra = { version = "0.35", default-features = false, features = ["libm"] }
 num-traits = { version = "0.2", default-features = false, features = ["libm"] }
 cfg-if = "1.0.1"
 
