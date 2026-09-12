@@ -1,4 +1,3 @@
-#![allow(unexpected_cfgs)]
 use crate::LeastSquaresProblem;
 use alloc::{format, string::String};
 use core::cell::RefCell;
@@ -11,20 +10,14 @@ use num_traits::float::Float;
 // mod derivest;
 mod finite_difference;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "RUSTC_IS_NIGHTLY")] {
-        pub use core::intrinsics::{likely, unlikely};
-    } else {
-        #[inline]
-        pub fn likely(b: bool) -> bool {
-            b
-        }
+#[inline(always)]
+pub fn likely(b: bool) -> bool {
+    b
+}
 
-        #[inline]
-        pub fn unlikely(b: bool) -> bool {
-            b
-        }
-    }
+#[inline(always)]
+pub fn unlikely(b: bool) -> bool {
+    b
 }
 
 /// Compute a numerical approximation of the Jacobian.
