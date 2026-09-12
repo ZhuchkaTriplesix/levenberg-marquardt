@@ -37,9 +37,6 @@ nalgebra = "0.35"
 sample-consensus = "1.0.2"
 approx = "0.5.1"
 
-[build-dependencies]
-rustc_version = "0.4.1"
-
 [profile.test]
 # The line fitting test case needs this to run in reasonable amount of time
 opt-level = 2
