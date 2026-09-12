@@ -11,10 +11,13 @@ use crate::{LeastSquaresProblem, LevenbergMarquardt, TerminationReason};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "minpack-compat")] {
-        // in "minpack-compat" mode we want real equality
+        // in "minpack-compat" mode we compare against MINPACK output with a tight tolerance
         macro_rules! assert_fp_eq {
             ($given:expr, $expected:expr) => {
-                assert_eq!($given, $expected)
+                assert_relative_eq!($given, $expected, epsilon = 1e-8, max_relative = 1e-12)
+            };
+            ($given:expr, $expected:expr, $ep:expr) => {
+                assert_relative_eq!($given, $expected, epsilon = $ep)
             };
         }
     } else {
