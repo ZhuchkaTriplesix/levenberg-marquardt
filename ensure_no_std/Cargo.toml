@@ -2,10 +2,11 @@
 name = "ensure_no_std"
 version = "0.1.0"
 authors = ["Geordon Worley <vadixidav@gmail.com>"]
-edition = "2018"
+edition = "2024"
 
 [dependencies]
 levenberg-marquardt = { path = ".." }
+nalgebra = { version = "0.35", default-features = false }
 
 [profile.dev]
 panic = "abort"
