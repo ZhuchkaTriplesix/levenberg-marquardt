@@ -465,17 +465,18 @@ where
         DS: Storage<F, N>,
     {
         let (_m, n) = self.upper_r.data.shape();
-        // only lower triangular part of self.upper_r is used in this function
-        // we fill it now with R^T which is then iteratively overwritten with L.
-        let mut r_and_l = self.upper_r.generic_view_mut((0, 0), (n, n));
-        r_and_l.fill_lower_triangle_with_upper_triangle();
-        let mut r_and_l = self.upper_r.rows_generic_mut(0, n);
-        // save diagonal of R so we can restore it later.
-        for j in 0..n.value() {
+        let n_val = n.value();
+        // Save diagonal of R and copy strictly upper triangle of R into strictly lower triangle (R^T).
+        for j in 0..n_val {
             unsafe {
-                *self.work.vget_unchecked_mut(j) = *r_and_l.get_unchecked((j, j));
-            };
+                *self.work.vget_unchecked_mut(j) = *self.upper_r.get_unchecked((j, j));
+                for i in j + 1..n_val {
+                    let val = *self.upper_r.get_unchecked((j, i));
+                    *self.upper_r.get_unchecked_mut((i, j)) = val;
+                }
+            }
         }
+        let mut r_and_l = self.upper_r.rows_generic_mut(0, n);
         // eliminate the diagonal entries from D using Givens rotations
         let p5: F = convert(0.5);
         let p25: F = convert(0.25);
