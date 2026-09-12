@@ -29,6 +29,15 @@ impl LeastSquaresProblem<F, Dyn, Dyn> for DynamicPolynomialProblem {
     fn residuals(&self) -> Option<DVector<F>> {
         let n = self.x_data.len();
         let mut res = DVector::zeros(n);
+        if self.residuals_into(&mut res) {
+            Some(res)
+        } else {
+            None
+        }
+    }
+
+    fn residuals_into(&self, out: &mut DVector<F>) -> bool {
+        let n = self.x_data.len();
         for i in 0..n {
             let x = self.x_data[i];
             let mut val = 0.0;
@@ -37,24 +46,33 @@ impl LeastSquaresProblem<F, Dyn, Dyn> for DynamicPolynomialProblem {
                 val += self.params[k] * x_pow;
                 x_pow *= x;
             }
-            res[i] = self.y_data[i] - val;
+            out[i] = self.y_data[i] - val;
         }
-        Some(res)
+        true
     }
 
     fn jacobian(&self) -> Option<OMatrix<F, Dyn, Dyn>> {
         let n = self.x_data.len();
         let mut jac = OMatrix::<F, Dyn, Dyn>::zeros_generic(Dyn(n), Dyn(self.degree));
+        if self.jacobian_into(&mut jac) {
+            Some(jac)
+        } else {
+            None
+        }
+    }
+
+    fn jacobian_into(&self, out: &mut OMatrix<F, Dyn, Dyn>) -> bool {
+        let n = self.x_data.len();
         for i in 0..n {
             let x = self.x_data[i];
             let mut x_pow = 1.0;
             for k in 0..self.degree {
                 // dr_i / dc_k = -x^k
-                jac[(i, k)] = -x_pow;
+                out[(i, k)] = -x_pow;
                 x_pow *= x;
             }
         }
-        Some(jac)
+        true
     }
 }
 
