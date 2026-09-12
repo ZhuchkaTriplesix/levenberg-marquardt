@@ -11,11 +11,13 @@ use num_traits::float::Float;
 mod finite_difference;
 
 #[inline(always)]
+#[allow(dead_code)]
 pub fn likely(b: bool) -> bool {
     b
 }
 
 #[inline(always)]
+#[allow(dead_code)]
 pub fn unlikely(b: bool) -> bool {
     b
 }
@@ -246,7 +248,7 @@ pub(crate) fn epsmch<F: RealField>() -> F {
 }
 
 #[inline]
-#[allow(clippy::unreadable_literal)]
+#[allow(dead_code, clippy::unreadable_literal)]
 pub(crate) fn giant<F: Float>() -> F {
     if cfg!(feature = "minpack-compat") {
         F::from(1.79769313485e+308f64).unwrap()
@@ -272,59 +274,58 @@ where
     N: Dim,
     VS: Storage<F, N, U1>,
 {
-    let mut s1 = F::zero();
-    let mut s2 = F::zero();
-    let mut s3 = F::zero();
-    let mut x1max = F::zero();
-    let mut x3max = F::zero();
-    let agiant = if cfg!(feature = "minpack-compat") {
-        convert(1.304e19f64)
-    } else {
-        Float::sqrt(giant::<F>())
-    } / convert(v.nrows() as f64);
-    let rdwarf = if cfg!(feature = "minpack-compat") {
-        convert(3.834e-20f64)
-    } else {
-        Float::sqrt(dwarf())
-    };
-    for xi in v.iter() {
-        let xabs = xi.abs();
-        if unlikely(xabs.is_nan()) {
-            return xabs;
-        }
-        if unlikely(xabs >= agiant || xabs <= rdwarf) {
-            if xabs > rdwarf {
-                // sum for large components
-                if xabs > x1max {
-                    s1 = F::one() + s1 * Float::powi(x1max / xabs, 2);
-                    x1max = xabs;
+    #[cfg(feature = "minpack-compat")]
+    {
+        let mut s1 = F::zero();
+        let mut s2 = F::zero();
+        let mut s3 = F::zero();
+        let mut x1max = F::zero();
+        let mut x3max = F::zero();
+        let agiant: F = convert::<f64, F>(1.304e19f64) / convert::<f64, F>(v.nrows() as f64);
+        let rdwarf: F = convert::<f64, F>(3.834e-20f64);
+        for xi in v.iter() {
+            let xabs = xi.abs();
+            if unlikely(xabs.is_nan()) {
+                return xabs;
+            }
+            if unlikely(xabs >= agiant || xabs <= rdwarf) {
+                if xabs > rdwarf {
+                    // sum for large components
+                    if xabs > x1max {
+                        s1 = F::one() + s1 * Float::powi(x1max / xabs, 2);
+                        x1max = xabs;
+                    } else {
+                        s1 += Float::powi(xabs / x1max, 2);
+                    }
                 } else {
-                    s1 += Float::powi(xabs / x1max, 2);
+                    // sum for small components
+                    if xabs > x3max {
+                        s3 = F::one() + s3 * Float::powi(x3max / xabs, 2);
+                        x3max = xabs;
+                    } else if xabs != F::zero() {
+                        s3 += Float::powi(xabs / x3max, 2);
+                    }
                 }
             } else {
-                // sum for small components
-                if xabs > x3max {
-                    s3 = F::one() + s3 * Float::powi(x3max / xabs, 2);
-                    x3max = xabs;
-                } else if xabs != F::zero() {
-                    s3 += Float::powi(xabs / x3max, 2);
-                }
+                s2 += xabs * xabs;
             }
+        }
+
+        if unlikely(!s1.is_zero()) {
+            x1max * Float::sqrt(s1 + (s2 / x1max) / x1max)
+        } else if likely(!s2.is_zero()) {
+            Float::sqrt(if likely(s2 >= x3max) {
+                s2 * (F::one() + (x3max / s2) * (x3max * s3))
+            } else {
+                x3max * ((s2 / x3max) + (x3max * s3))
+            })
         } else {
-            s2 += xabs * xabs;
+            x3max * Float::sqrt(s3)
         }
     }
-
-    if unlikely(!s1.is_zero()) {
-        x1max * Float::sqrt(s1 + (s2 / x1max) / x1max)
-    } else if likely(!s2.is_zero()) {
-        Float::sqrt(if likely(s2 >= x3max) {
-            s2 * (F::one() + (x3max / s2) * (x3max * s3))
-        } else {
-            x3max * ((s2 / x3max) + (x3max * s3))
-        })
-    } else {
-        x3max * Float::sqrt(s3)
+    #[cfg(not(feature = "minpack-compat"))]
+    {
+        v.norm()
     }
 }
 
