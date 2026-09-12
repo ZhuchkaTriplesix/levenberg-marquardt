@@ -13,8 +13,8 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      - name: Install beta toolchain
-        uses: dtolnay/rust-toolchain@beta
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
@@ -27,7 +27,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run cargo clippy
-        run: cargo clippy --all-targets --tests -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
   no_std:
     name: no_std
@@ -36,8 +36,8 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      - name: Install beta toolchain for ARM
-        uses: dtolnay/rust-toolchain@beta
+      - name: Install stable toolchain for ARM
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: armv7a-none-eabi
 
@@ -50,21 +50,31 @@ jobs:
         run: cargo rustc --target=armv7a-none-eabi --manifest-path=ensure_no_std/Cargo.toml
 
   tests:
-    name: tests
+    name: tests (${{ matrix.rust }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust:
+          - "1.89.0"
+          - stable
+          - beta
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
 
-      - name: Install beta toolchain
-        uses: dtolnay/rust-toolchain@beta
+      - name: Install toolchain (${{ matrix.rust }})
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
 
       - name: Set up cache
         uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
 
-      - name: Run cargo test
-        # run: cargo test --all-features --no-fail-fast --locked --workspace -- --nocapture
-        # run: cargo test --all-features --no-fail-fast --workspace -- --nocapture
-        run: cargo test --features "" --no-fail-fast --workspace -- --nocapture
+      - name: Run cargo test (default features)
+        run: cargo test --no-fail-fast --workspace -- --nocapture
+
+      - name: Run cargo test (all features)
+        run: cargo test --all-features --no-fail-fast --workspace -- --nocapture
